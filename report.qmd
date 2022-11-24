@@ -1,0 +1,54 @@
+---
+title: "GEGN 508: Flat Roofed Excavation Assignment"
+date: 11/17/2022
+author:
+  - name: Derrick Chambers
+    url: https://derchambers.com
+    affiliation: Colorado School of Mines
+    affiliation-url: https://mines.edu
+
+  - name: Rick
+    url: 
+    affiliation: Colorado School of Mines
+    affiliation-url: https://mines.edu
+
+
+format:
+  pdf:
+    toc: true
+    toc-depth: 1
+    number-sections: true
+    colorlinks: true
+
+bibliography: references.bib
+---
+
+# Abstract
+
+The following report addresses the flat roofed excavation assignment as part of GEGN 508: Advanced Rock Mechanics,
+taken at the Colorado School of Mines in fall of 2022. 
+
+
+# Assignment prompt
+
+You are on the design team for a cavern to be excavated through Hawkesbury sandstone (UCS ≈ 30 MPa +/- 10 MPa; E ≈ 12 GPa +/- 2 GPa) in southeastern Australia. The cavern is to be 15.0 m in span; an initial top heading of 3 m height will be excavated, followed by subsequent benching downwards. The top of the cavern is planned to be 15 m below surface, and the top 10 m of overburden is a relatively weak shale with unknown arching capacity (the immediate 5 m of roof will be Hawksbury sandstone).
+
+In the area of your cavern, the rockmass is expected to have sub-horizontal bedding planes spaced at 0.5 m to 1 m, as well as two mutually orthogonal cross-joint sets that both dip vertically (+/- 10o) and that strike at 10-20o and 70-80o off the cavern alignment with spacing ranging from 1 m to 3 m. The bedding planes are planar and smooth, while the cross-joints are planar and rough; all three joints sets are clean/unaltered.
+
+The contractor plans to use passive grouted rebar as primary roof support. The target Factor of Safety for the roof after the installation of primary support is 2.0.
+
+You are to complete the following tasks, and then document your findings and design recommendations in the form of a short (<5 pages) written report. Your submission will be graded based on presentation, correctness of results, appropriateness of the final design recommendation (and strength of the associated justification), and level of rigor document in accounting for uncertainties in the design.
+
+NOTE: You are provided MATLAB code (below) that implements the Voussoir Beam analytical solution of Diederichs & Kaiser (1999). Please consult this paper for more information on what the code is doing (as well as the inputs and outputs of the code).
+
+ 
+
+## Tasks
+
+1. Determine what support might be recommended according to empirical methods and/or rules of thumb; consider the limitations of these design methods in this context
+2. Assess the stability of the unsupported case using the voussoir beam analog calculation; consider the extent to which the voussoir beam analog applies in this case (and document your assumptions)
+3. Using the approach for bolted roof stability estimation presented by Abousleiman et al. (2021), modify the inputs used in analytical solution code to test different bolt patterns to evaluate their potential influence on stability
+4. Based on all the preceding analyses, recommend a bolt support design
+
+
+# References

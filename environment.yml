@@ -1,0 +1,12 @@
+name: flat
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pandas
+  - matplotlib
+  - scipy
+  - seaborn
+  - jupyter
+  - seaborn
+  - tabulate
