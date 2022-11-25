@@ -75,10 +75,8 @@ target/
 *.swp
 .DS_store*
 
-# docs
-docs/api/*
-_autosummary
-
+# outputs
+outputs/*
 
 # quarto output
 report_files/*
