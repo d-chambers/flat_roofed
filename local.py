@@ -17,6 +17,7 @@ unsupported_plot = output_path / 'unsupported_fs.png'
 # --- Constants
 
 GRAVITATIONAL_CONSTANT = 9.81  # m/s^2
+DESIGN_FACTOR_OF_SAFETY = 2  # unitless
 
 diedrich_inputs = dict(
     thickness=(0.5, 1.0),
@@ -31,6 +32,7 @@ diedrich_inputs = dict(
     sandstone_height=(5, 5),
     shale_height=(10, 10),
     brittleness_factor=(0.6, 0.6),
+    ucs_coef=(0.3, 0.5),
 )
 
 

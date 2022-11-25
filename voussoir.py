@@ -123,8 +123,6 @@ class DiederichBeam:
 
         friction_coef = np.tan(np.deg2rad(self.joint_friction_angle))
         buckling_limit = np.min([100 * (1 - (N_max - N_min)), 100])
-        if buckling_limit == 200:
-            breakpoint()
         results = dict(
             iteration_count=(count + 1) / 100,
             N=Np,

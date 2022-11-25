@@ -35,7 +35,7 @@ if __name__ == "__main__":
         vb = DiederichBeam(
             thickness=sample['thickness'],
             span=sample['span'],
-            ucs=sample['ucs'],
+            ucs=sample['ucs'] * sample['ucs_coef'],
             stiffness=sample['stiffness'],
             joint_stiffness=sample['joint_stiffness'],
             joint_spacing=sample['joint_spacing'],
