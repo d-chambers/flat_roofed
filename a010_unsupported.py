@@ -9,20 +9,6 @@ import pandas as pd
 import local
 
 
-def get_pressure(kwargs):
-    """Get the pressure on the beam from overburden."""
-
-    def get_sandstone_pressure(sandstone_height, thickness, sandstone_density, **kwargs):
-        """Return the pressure on the beam exerted by sandstone above it."""
-        height = sandstone_height - thickness
-        return sandstone_density * height * local.GRAVITATIONAL_CONSTANT
-
-    def get_shale_pressure(shale_height, shale_density, **kwargs):
-        """Return pressure from shale on the beam."""
-        return shale_density * shale_height * local.GRAVITATIONAL_CONSTANT
-
-    return get_shale_pressure(**kwargs) + get_sandstone_pressure(**kwargs)
-
 
 if __name__ == "__main__":
     # get the distribution dictionary
@@ -31,9 +17,9 @@ if __name__ == "__main__":
     for _ in range(10_000):
         sample = local.sample(dist_dict)
         # first calculate pressure on beam
-        pressure = get_pressure(sample)
+        pressure = local.get_pressure(sample)
         vb = DiederichBeam(
-            thickness=sample['thickness'],
+            thickness=sample['horizontal_joint_spacing'],
             span=sample['span'],
             ucs=sample['ucs'] * sample['ucs_coef'],
             stiffness=sample['stiffness'],

@@ -12,6 +12,7 @@ import numpy as np
 
 import local
 
+
 @dataclass
 class DiederichBeam:
     """
@@ -129,18 +130,18 @@ class DiederichBeam:
             buckling_limit=buckling_limit,
             buckling_fs=self._maximum_buckling_limit / buckling_limit,
             crushing_fs=self.ucs / Fmp,
-            sliding_fs=(Fmp * Np) / (weight * self.span) * friction_coef,
+            sliding_fs=(Fmp * Np * self.thickness) / (weight * self.span) * friction_coef,
             midspan_displacement=-disp,
             Fm=Fmp,
             span=self.span,
         )
-        results.update(self.input_values)
+        results.update(self.diederich_inputs)
         return pd.Series(results)
 
     @property
-    def input_values(self) -> dict:
+    def diederich_inputs(self) -> dict:
         """Return a dict of input values"""
-        params = [x for x in list(self.__annotations__) if not x.startswith('_')]
+        params = [x for x in list(DiederichBeam.__annotations__) if not x.startswith('_')]
         out = {x: getattr(self, x) for x in params}
         return out
 
@@ -161,6 +162,9 @@ class DiederichBeam:
             solution = vb.solve()[list(cls._test_columns)]
             out.append(solution)
         return pd.DataFrame(out)
+
+    def __hash__(self):
+        return hash(id(self))
 
 
 @dataclass
@@ -192,14 +196,15 @@ class AbousleimanBeam(DiederichBeam):
         """Set default values if left None, check brittleness_factor"""
         self.bolt_length = self.bolt_length or self.thickness
         self.horizontal_joint_spacing = self.horizontal_joint_spacing or self.thickness
-        if not (0.6 < self.brittleness_factor < 1.25):
+        if not (0.6 <= self.brittleness_factor <= 1.25):
             msg = 'brittleness_factor must be between 0.6 and 1.25'
             raise ValueError(msg)
 
     @cache
     def get_modified_beam_stiffness(self):
         """Return the modified beam stiffness (eq 7)"""
-        num_layers = self.thickness / self.horizontal_joint_spacing
+        bolt_joint_ratio = self.bolt_length / self.horizontal_joint_spacing
+        num_layers = np.ceil(bolt_joint_ratio)
         beam_stiffness = self.get_rockmass_stiffness()
         modified_beam_stiffness = 1.1 / (num_layers ** 2) * beam_stiffness
         return modified_beam_stiffness
@@ -211,17 +216,46 @@ class AbousleimanBeam(DiederichBeam):
         out = (0.19 * 1 / np.sqrt(mod_stiff) + 1.05) * self.thickness
         return out
 
+    def get_inputs_1(self):
+        """Get the first inputs for solving for buckling limit/displacement."""
+        vals = dict(self.diederich_inputs)
+        vals['rockmass_stiffness'] = self.get_modified_beam_stiffness()
+        vals['thickness'] = self.bolt_length
+        return vals
+
+    def get_inputs_2(self):
+        """Get the second inputs for solving for max stress in beam."""
+        vals = dict(self.diederich_inputs)
+        vals['rockmass_stiffness'] = self.get_rockmass_stiffness()
+        vals['thickness'] = self.get_modified_thickness()
+        return vals
+
     def solve(self):
         """Solve getting new factors of safety."""
-        # Solve with modified stiffness to get displacement and buckling.
-        vals = dict(self.input_values)
-        vals['rockmass_stiffness'] = self.get_modified_beam_stiffness()
-        results_1 = DiederichBeam(**vals).solve()
+        # populate run intputs
+        out = dict(self.diederich_inputs)
+        out['bolt_length'] = self.bolt_length
+        out['horizontal_joint_spacing'] = self.horizontal_joint_spacing
+        out['brittleness_factor'] = self.brittleness_factor
+        # next get buckling limit and displacement
+        valid_outputs1 = (
+            'buckling_limit', 'buckling_fs', 'midspan_displacement',
+        )
+        results_1 = DiederichBeam(**self.get_inputs_1()).solve()
+        out.update({x: results_1[x] for x in valid_outputs1})
         # now solve with modified thickness to get max stress and crushing limit
-        vals = dict(self.input_values)
-        vals['thickness'] = self.get_rockmass_stiffness()
-        results_2 = DiederichBeam(**vals)
-        breakpoint()
+        results_2 = DiederichBeam(**self.get_inputs_2()).solve()
+        out['Fm'] = results_2['Fm']
+        out['sliding_fs'] = results_2['sliding_fs']
+        out['crushing_fs'] = self.get_crushing_fs(out)
+        return pd.Series(out)
+
+    def __hash__(self):
+        return hash(id(self))
+
+    def get_crushing_fs(self, out):
+        """Get the crushing factor of safety."""
+        return (self.ucs / out['Fm']) * self.brittleness_factor
 
 
 def test_with_matlab_results():
@@ -232,19 +266,6 @@ def test_with_matlab_results():
     assert np.allclose(results.values, expected.values)
 
 
-def sample_run(cls, run_count=1_000, **kwargs):
-    """
-    Solve iteratively by randomly sampling values provided in kwargs.
-    """
-    out = []
-    # create an array of possible values for each param.
-    variables = {i: np.array(v) for i, v in kwargs.items()}
-    for _ in range(run_count):
-        # get one value from each parameter, append solution
-        inputs = {i: random.sample(v, k=1)[0] for i, v in variables.items()}
-        out.append(cls(**inputs).solve())
-    return pd.DataFrame(out)
-
-
 if __name__ == "__main__":
     test_with_matlab_results()
+    # test_with_max_values()

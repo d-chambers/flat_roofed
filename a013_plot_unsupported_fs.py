@@ -31,14 +31,14 @@ def plot(df, axes, fig, suptitle='Unsupported'):
     """First get """
     failed = np.isclose(df['buckling_limit'], 100)
     sub = df[~failed]
-    fs_cols = [x for x in df.columns if x.endswith('_fs')]
-    fs_df = sub[fs_cols]
-    solvable_percent = int(np.round((len(sub) / len(df)) * 100))
 
-    plot_hist(fs_df.min(axis=1), axes[0], 'Overall FS')
-    plot_hist(fs_df['buckling_fs'], axes[1], 'Buckling FS')
-    plot_hist(fs_df['sliding_fs'], axes[2], 'Sliding FS')
-    plot_hist(fs_df['crushing_fs'], axes[3], 'Crushing FS')
+    solvable_percent = int(np.round((len(sub) / len(df)) * 100))
+    overall_fs = local.get_overall_fs(sub)
+
+    plot_hist(overall_fs, axes[0], 'Overall FS')
+    plot_hist(sub['buckling_fs'], axes[1], 'Buckling FS')
+    plot_hist(sub['sliding_fs'], axes[2], 'Sliding FS')
+    plot_hist(sub['crushing_fs'], axes[3], 'Crushing FS')
 
     fig.supxlabel('Factor of Safety')
     fig.supylabel('Sample Count')
