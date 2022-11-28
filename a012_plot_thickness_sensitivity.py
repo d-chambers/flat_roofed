@@ -17,8 +17,9 @@ def test_with_max_values():
     thicknesses = np.arange(0.5, 5, 0.01)
     for thickness in thicknesses:
         sample = {i: v[1] for i, v in local.diedrich_inputs.items()}
+        sample['thickness'] = thickness
         # first calculate pressure on beam
-        pressure = local.get_pressure(sample)
+        pressure = local.get_total_pressure(sample)
         vb = DiederichBeam(
             thickness=thickness,
             span=sample['span'],
@@ -27,7 +28,7 @@ def test_with_max_values():
             joint_stiffness=sample['joint_stiffness'],
             joint_spacing=sample['joint_spacing'],
             joint_friction_angle=sample['joint_friction_angle'],
-            density=sample['sandstone_density'],
+            density=0,
             pressure=pressure,
         )
         ser = vb.solve()

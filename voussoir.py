@@ -90,8 +90,8 @@ class DiederichBeam:
         N = np.arange(0.01, 1.01, 0.01).T
         Fmp = 1e100
         Fm, mm, Np, disp = 0, 0, 0, 0
-        for count, i in enumerate(N):
-            Zo = self.thickness * (1 - (2 / 3) * i)
+        for count, n in enumerate(N):
+            Zo = self.thickness * (1 - (2 / 3) * n)
             L = self.span + (8 * Zo * Zo / (3 * self.span))
             del_l = 0
             del_l_prev = 100
@@ -102,8 +102,8 @@ class DiederichBeam:
                 if zchk >= 0:
                     k += 1
                     Z = np.sqrt(3 * self.span * zchk / 8)
-                    Fm = weight * self.span * self.span / (4 * i * Z)
-                    Fav = Fm * ((2 / 3) + i) / 3
+                    Fm = weight * (self.span**2) / (4 * n * Z)
+                    Fav = Fm * ((2 / 3) + n) / 3
                     del_l_prev = del_l
                     del_l = (Fav / stiffness) * L
                     mm += 1
@@ -112,12 +112,12 @@ class DiederichBeam:
                     flag = 1
 
             if flag == 0 and k > 1:
-                N_min = min([i, N_min])
-                N_max = max([i, N_max])
+                N_min = min([n, N_min])
+                N_max = max([n, N_max])
 
             if Fmp > Fm and k > 1 and flag == 0:
                 Fmp = Fm
-                Np = i
+                Np = n
                 Zp = Z
                 Zop = Zo
                 disp = Zop - Zp
@@ -130,7 +130,7 @@ class DiederichBeam:
             buckling_limit=buckling_limit,
             buckling_fs=self._maximum_buckling_limit / buckling_limit,
             crushing_fs=self.ucs / Fmp,
-            sliding_fs=(Fmp * Np * self.thickness) / (weight * self.span) * friction_coef,
+            sliding_fs=(Fmp * Np) / (weight * self.span) * friction_coef,
             midspan_displacement=-disp,
             Fm=Fmp,
             span=self.span,
@@ -206,14 +206,18 @@ class AbousleimanBeam(DiederichBeam):
         bolt_joint_ratio = self.bolt_length / self.horizontal_joint_spacing
         num_layers = np.ceil(bolt_joint_ratio)
         beam_stiffness = self.get_rockmass_stiffness()
-        modified_beam_stiffness = 1.1 / (num_layers ** 2) * beam_stiffness
+        modified_beam_stiffness = (1.1 / (num_layers ** 2)) * beam_stiffness
         return modified_beam_stiffness
 
     @cache
-    def get_modified_thickness(self, mod_stiff=None):
+    def get_modified_thickness(self):
         """Return the modified thickness (EQ 9)"""
-        mod_stiff = mod_stiff or self.get_modified_beam_stiffness()
-        out = (0.19 * 1 / np.sqrt(mod_stiff) + 1.05) * self.thickness
+        mod_stiff = self.get_modified_beam_stiffness()
+        # need to convert mod_stiff to GPa for eq to work.
+        mod_stiff = mod_stiff / 1e9
+        thick = self.horizontal_joint_spacing
+        out = (0.19 * 1 / np.sqrt(mod_stiff) + 1.05) * thick
+        # print(out, mod_stiff)
         return out
 
     def get_inputs_1(self):
@@ -246,6 +250,7 @@ class AbousleimanBeam(DiederichBeam):
         # now solve with modified thickness to get max stress and crushing limit
         results_2 = DiederichBeam(**self.get_inputs_2()).solve()
         out['Fm'] = results_2['Fm']
+        print(out['Fm'])
         out['sliding_fs'] = results_2['sliding_fs']
         out['crushing_fs'] = self.get_crushing_fs(out)
         return pd.Series(out)

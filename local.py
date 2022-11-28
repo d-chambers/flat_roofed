@@ -11,10 +11,12 @@ input_path = Path('inputs')
 output_path = Path('outputs')
 output_path.mkdir(exist_ok=True, parents=True)
 
-unsupported_sensitivity_path = output_path / 'thickness_sensitivity.png'
+unsupported_sensitivity_path = output_path / 'a012_thickness_sensitivity.png'
 
-unsupported_df_path = output_path / 'unsupported_fs_df.csv'
-unsupported_plot = output_path / 'unsupported_fs.png'
+unsupported_df_path = output_path / 'a013_unsupported_fs_df.csv'
+unsupported_plot = output_path / 'a013_unsupported_fs.png'
+
+bolt_length_df_path = output_path / 'a020_support_selection.csv'
 
 # --- Constants
 
@@ -26,10 +28,10 @@ diedrich_inputs = dict(
     span=(15, 15),
     ucs=(20e6, 40e6),
     stiffness=(10e9, 14e9),
-    joint_stiffness=(1000e9, 2000e9),
+    joint_stiffness=(1500e9, 4000e9),
     joint_spacing=(1, 3),
     # joint_friction_angle=(30, 40),
-    joint_friction_angle=(25, 25),
+    joint_friction_angle=(28, 45),
 
     shale_density=(2450, 2450),
     sandstone_density=(2450, 2450),
@@ -39,6 +41,7 @@ diedrich_inputs = dict(
     ucs_coef=(0.3, 0.5),
     horizontal_joint_spacing=(0.5, 1),
 )
+
 
 def get_percent_passed(df):
     """Determine how many of the test cases meet the FS."""
@@ -70,6 +73,7 @@ def create_uniform_distributions(input_dict, num=3000):
 
 def sample(dist_dict):
     """Given a dict of arrays, randomly pull one sample for each key."""
+    # out = {i: v[-1] for i, v in dist_dict.items()}
     out = {i: np.random.choice(v, 1)[0] for i, v in dist_dict.items()}
     return out
 
@@ -86,7 +90,18 @@ def get_pressure(kwargs):
         """Return pressure from shale on the beam."""
         return shale_density * shale_height * GRAVITATIONAL_CONSTANT
 
+    return (get_shale_pressure(**kwargs) + get_sandstone_pressure(**kwargs)) * (2/3)
+
+
+def get_total_pressure(kwargs):
+    """Get the pressure on the beam from overburden."""
+
+    def get_sandstone_pressure(sandstone_height, sandstone_density, **kwargs):
+        """Return the pressure on the beam exerted by sandstone above it."""
+        return sandstone_density * sandstone_height * GRAVITATIONAL_CONSTANT
+
+    def get_shale_pressure(shale_height, shale_density, **kwargs):
+        """Return pressure from shale on the beam."""
+        return shale_density * shale_height * GRAVITATIONAL_CONSTANT
+
     return get_shale_pressure(**kwargs) + get_sandstone_pressure(**kwargs)
-
-
-
