@@ -236,7 +236,7 @@ class AbousleimanBeam(DiederichBeam):
 
     def solve(self):
         """Solve getting new factors of safety."""
-        # populate run intputs
+        # populate run inputs
         out = dict(self.diederich_inputs)
         out['bolt_length'] = self.bolt_length
         out['horizontal_joint_spacing'] = self.horizontal_joint_spacing
@@ -250,7 +250,7 @@ class AbousleimanBeam(DiederichBeam):
         # now solve with modified thickness to get max stress and crushing limit
         results_2 = DiederichBeam(**self.get_inputs_2()).solve()
         out['Fm'] = results_2['Fm']
-        print(out['Fm'])
+        # print(out['Fm'])
         out['sliding_fs'] = results_2['sliding_fs']
         out['crushing_fs'] = self.get_crushing_fs(out)
         return pd.Series(out)

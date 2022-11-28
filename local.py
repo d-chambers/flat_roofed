@@ -4,6 +4,7 @@ Local variables used across scripts.
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 # --- File IO
@@ -17,6 +18,8 @@ unsupported_df_path = output_path / 'a013_unsupported_fs_df.csv'
 unsupported_plot = output_path / 'a013_unsupported_fs.png'
 
 bolt_length_df_path = output_path / 'a020_support_selection.csv'
+
+surchage_varied_path = output_path / 'a030_varied_surcharges.csv'
 
 # --- Constants
 
@@ -71,10 +74,23 @@ def create_uniform_distributions(input_dict, num=3000):
     return out
 
 
-def sample(dist_dict):
+def aggregate_passed_rates(df):
+    """Aggregate the various passed rates."""
+    out = {}
+    df_len = len(df)
+    for col in [x for x in df.columns if x.endswith('_fs')]:
+        out[col] = (df[col] >= DESIGN_FACTOR_OF_SAFETY).sum() / df_len
+    ser = pd.Series(out)
+    ser['fs'] = ser.min()
+    return ser
+
+
+def sample(dist_dict, max_only=False):
     """Given a dict of arrays, randomly pull one sample for each key."""
-    # out = {i: v[-1] for i, v in dist_dict.items()}
-    out = {i: np.random.choice(v, 1)[0] for i, v in dist_dict.items()}
+    if max_only:
+        out = {i: v[-1] for i, v in dist_dict.items()}
+    else:
+        out = {i: np.random.choice(v, 1)[0] for i, v in dist_dict.items()}
     return out
 
 

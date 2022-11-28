@@ -1,6 +1,8 @@
 """
-Select support by varying over reasonable bolt spacing/depths.
+Script to vary the surcharge
 """
+import itertools
+
 import numpy as np
 
 from voussoir import AbousleimanBeam
@@ -10,7 +12,7 @@ import pandas as pd
 import local
 
 
-def sample(dist_dict, bolt_length, iterations=1000):
+def sample(dist_dict, bolt_length, surcharge, iterations=1000):
     """
     Sample the stability using the Abousleim Beam.
 
@@ -30,12 +32,11 @@ def sample(dist_dict, bolt_length, iterations=1000):
             joint_spacing=sample['joint_spacing'],
             joint_friction_angle=sample['joint_friction_angle'],
             density=0,
-            pressure=local.get_total_pressure(sample),
+            pressure=local.get_total_pressure(sample) * surcharge / 100.,
             bolt_length=bolt_length,
             horizontal_joint_spacing=sample['horizontal_joint_spacing'],
             brittleness_factor=sample['brittleness_factor'],
         )
-        breakpoint()
         out.append(vb.solve())
     return pd.DataFrame(out)
 
@@ -43,14 +44,16 @@ def sample(dist_dict, bolt_length, iterations=1000):
 if __name__ == "__main__":
     # get the distribution dictionary
     dist_dict = local.create_uniform_distributions(local.diedrich_inputs)
-    bolt_lengths = np.arange(1, 5.25, 0.25)
+    bolt_lengths = [1.0, 2.0, 3.0, 4.0]
+    # bolt_lengths = np.linspace(1, 4, num=100)
+    # surcharge_percentages = range(10, 110, 10)
+    surcharge_percentages = np.linspace(10, 100, num=15)
     dfs = []
-    for bolt_length in [3]:  # bolt_lengths:  # bolt_lengths:  # bolt_lengths:
-        breakpoint()
-        df = sample(dist_dict, bolt_length=bolt_length, iterations=1)
+    for bolt_length, surchage in itertools.product(bolt_lengths, surcharge_percentages):
+        df = sample(dist_dict, bolt_length=bolt_length, surcharge=surchage, iterations=500)
         df['bolt_length'] = bolt_length
+        df['surcharge_percent'] = surchage
+        print(f"finished {bolt_length}, {surchage}")
         dfs.append(df)
-        print(f"finished {bolt_length}")
     results = pd.concat(dfs, axis=0).reset_index(drop=True)
-    breakpoint()
-    results.to_csv(local.bolt_length_df_path)
+    results.to_csv(local.surchage_varied_path)
