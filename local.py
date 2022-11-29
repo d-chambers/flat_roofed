@@ -12,9 +12,10 @@ input_path = Path('inputs')
 output_path = Path('outputs')
 output_path.mkdir(exist_ok=True, parents=True)
 
+unsupported_df_path = output_path / 'a010_unsupported_fs_df.csv'
+
 unsupported_sensitivity_path = output_path / 'a012_thickness_sensitivity.png'
 
-unsupported_df_path = output_path / 'a013_unsupported_fs_df.csv'
 unsupported_plot = output_path / 'a013_unsupported_fs.png'
 
 bolt_length_df_path = output_path / 'a020_support_selection.csv'

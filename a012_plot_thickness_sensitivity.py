@@ -23,7 +23,7 @@ def test_with_max_values():
         vb = DiederichBeam(
             thickness=thickness,
             span=sample['span'],
-            ucs=sample['ucs'] * sample['ucs_coef'],
+            rockmass_ucs=sample['ucs'] * sample['ucs_coef'],
             stiffness=sample['stiffness'],
             joint_stiffness=sample['joint_stiffness'],
             joint_spacing=sample['joint_spacing'],
@@ -43,7 +43,7 @@ def plot_sensitivity(df):
     """Plot the sensitivity to thickness"""
     fig, ax = plt.subplots(1, 1)
     for label, ser in df.items():
-        ax.plot(ser.index, ser.values, label=label)
+        ax.plot(ser.index, ser.values, label=label.replace('_fs', ''))
     ax.legend()
     ax.set_xlabel('Beam Thickness (m)')
     ax.set_ylabel('Factor of Safety')

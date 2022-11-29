@@ -40,22 +40,24 @@ class DiederichBeam:
         The effective stiffness of the rockmass. If None, this is calculated
         according to stiffness and joint stiffness.
     pressure
-        The external pressure applied down on the beam. See eq 9-12 for applying
-        different types of pressure geometries. A list can be provided for
-        multiple pressures. Support pressure should be negative (because it
-        reduces the weight of the beam).
+        The total pressure applied to the beam and overburden (per 1 m slice).
+        If the density is None, the beam weight is taken out. If not, this
+        is the weight above the beam.
+    surcharge_factor
+        A coefficient to multiply the surcharge by. 1 for evenly distributed loads
+        2/3 for triangular loads and 7/9 for parabolic loads.
     """
-
     span: float = 15.0  # (m)
     thickness: float = 1.  # (m)
     stiffness: float = 1.0e10  # (Pa)
-    ucs: float = 30_000_000  # (Pa)
-    density: float = 3000  # (kg/m**3)
+    rockmass_ucs: float = 30_000_000  # (Pa)
+    density: float | None = 3000  # (kg/m**3)
     joint_stiffness: float = 5.0e9  # (Pa/m)
     joint_spacing: float = 1  # (m)
     joint_friction_angle: float = 41  # (degrees)
     rockmass_stiffness: float | None = None
-    pressure: float = 0
+    pressure: float | None = None
+    surcharge_factor: float = 1.0
 
     _gravity = local.GRAVITATIONAL_CONSTANT
     _maximum_buckling_limit = 35  # this is when snap-through is assumed to occur
@@ -74,6 +76,11 @@ class DiederichBeam:
         inv_joint = 1. / (self.joint_stiffness * self.joint_spacing)
         return 1. / (inv_stiff + inv_joint)
 
+    def get_effective_weight(self):
+        """Get the effective weight."""
+        pressure = self.pressure if self.pressure is not None else 0
+        return self._gravity * self.density + np.sum(pressure)
+
     def solve(self):
         """
         Return a dataframe of:
@@ -82,10 +89,8 @@ class DiederichBeam:
 
         After iteratively solving for beam parameters.
         """
-        # calc overall stiffness of beam if not provided
         stiffness = self.rockmass_stiffness or self.get_rockmass_stiffness()
-        # get effective weight
-        weight = self._gravity * self.density + np.sum(self.pressure) / self.thickness
+        weight = self.get_effective_weight()
         N_min, N_max = 1, 0
         N = np.arange(0.01, 1.01, 0.01).T
         Fmp = 1e100
@@ -129,7 +134,7 @@ class DiederichBeam:
             N=Np,
             buckling_limit=buckling_limit,
             buckling_fs=self._maximum_buckling_limit / buckling_limit,
-            crushing_fs=self.ucs / Fmp,
+            crushing_fs=self.rockmass_ucs / Fmp,
             sliding_fs=(Fmp * Np) / (weight * self.span) * friction_coef,
             midspan_displacement=-disp,
             Fm=Fmp,
@@ -154,7 +159,7 @@ class DiederichBeam:
                 span=span,  # (m)
                 thickness=1.,  # (m)
                 stiffness=1.0e10,  # (Pa)
-                ucs=30_000_000,  # (Pa)
+                rockmass_ucs=30_000_000,  # (Pa)
                 density=3000,  # (kg/m**3)
                 joint_stiffness=5.0e9,  # (Pa)
                 joint_spacing=1,  # (m)
@@ -260,7 +265,7 @@ class AbousleimanBeam(DiederichBeam):
 
     def get_crushing_fs(self, out):
         """Get the crushing factor of safety."""
-        return (self.ucs / out['Fm']) * self.brittleness_factor
+        return (self.rockmass_ucs / out['Fm']) * self.brittleness_factor
 
 
 def test_with_matlab_results():
