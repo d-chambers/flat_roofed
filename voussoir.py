@@ -3,14 +3,39 @@ Voussoir beam analytical solution.
 
 See Diederichs & Kaiser (1999). 
 """
-import random
 from dataclasses import dataclass
 from functools import cache
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 import local
+
+
+# minimum properties (chapter 2.9 of his thesis)
+ABOUSELEIMAN_MIN = dict(
+    span=12.5,  # (m)
+    thickness=3,  # (m)
+    stiffness=13.8e9,  # (Pa)
+    rockmass_ucs=30.7e6 * 0.5,  # (Pa)
+    density=24000/9.81,  # (kg/m**3)
+    joint_stiffness=1500e9,  # (Pa/m)
+    joint_spacing=0.8,  # (m)
+    joint_friction_angle=28,  # (degrees)
+    bolt_length=3.9,
+)
+
+ABOUSELEIMAN_MAX = dict(
+    span=12.5,  # (m)
+    thickness=4.5,  # (m)
+    stiffness=13.8e9,  # (Pa)
+    rockmass_ucs=30.7e6,  # (Pa)
+    density=24000/9.81,  # (kg/m**3)
+    joint_stiffness=4000e9,  # (Pa/m)
+    joint_spacing=0.8,  # (m)
+    joint_friction_angle=45,  # (degrees)
+    bolt_length=3.9,
+)
 
 
 @dataclass
@@ -43,9 +68,6 @@ class DiederichBeam:
         The total pressure applied to the beam and overburden (per 1 m slice).
         If the density is None, the beam weight is taken out. If not, this
         is the weight above the beam.
-    surcharge_factor
-        A coefficient to multiply the surcharge by. 1 for evenly distributed loads
-        2/3 for triangular loads and 7/9 for parabolic loads.
     """
     span: float = 15.0  # (m)
     thickness: float = 1.  # (m)
@@ -57,7 +79,6 @@ class DiederichBeam:
     joint_friction_angle: float = 41  # (degrees)
     rockmass_stiffness: float | None = None
     pressure: float | None = None
-    surcharge_factor: float = 1.0
 
     _gravity = local.GRAVITATIONAL_CONSTANT
     _maximum_buckling_limit = 35  # this is when snap-through is assumed to occur
@@ -79,7 +100,7 @@ class DiederichBeam:
     def get_effective_weight(self):
         """Get the effective weight."""
         pressure = self.pressure if self.pressure is not None else 0
-        return self._gravity * self.density + np.sum(pressure)
+        return self._gravity * self.density + np.sum(pressure) / self.thickness
 
     def solve(self):
         """
@@ -107,7 +128,7 @@ class DiederichBeam:
                 if zchk >= 0:
                     k += 1
                     Z = np.sqrt(3 * self.span * zchk / 8)
-                    Fm = weight * (self.span**2) / (4 * n * Z)
+                    Fm = weight * (self.span ** 2) / (4 * n * Z)
                     Fav = Fm * ((2 / 3) + n) / 3
                     del_l_prev = del_l
                     del_l = (Fav / stiffness) * L
@@ -276,6 +297,29 @@ def test_with_matlab_results():
     assert np.allclose(results.values, expected.values)
 
 
+def test_abouslieman_case_1():
+    """tests for Abousleiman cases from chapter 2.9 of his thesis."""
+    # no load case
+    params = dict(ABOUSELEIMAN_MIN)
+    params['bolt_length'] = 3.0
+    params['brittleness_factor'] = 0.6
+    params['horizontal_joint_spacing'] = params['thickness'] / 3
+    params['pressure'] = 0
+    solution_1 = AbousleimanBeam(**params).solve()
+
+    # loaded case
+    params = dict(params)
+    params['pressure'] = 120_000 * (2/3)
+    breakpoint()
+    solution_2 = AbousleimanBeam(**params).solve()
+    breakpoint()
+
+
+
+    breakpoint()
+    # solution = beam1.solve()
+
+
 if __name__ == "__main__":
     test_with_matlab_results()
-    # test_with_max_values()
+    test_abouslieman_case_1()
